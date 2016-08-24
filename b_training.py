@@ -1,10 +1,12 @@
 import pickle
 import tensorflow as tf
 
-trainingData = pickle.load(open('processed_data/trainingData'))
-validateData = pickle.load(open('processed_data/validateData'))
-trainingLabel = pickle.load(open('processed_data/trainingLabel'))
-validateLabel = pickle.load(open('processed_data/validateLabel'))
+trainingData = pickle.load(open('processed_data/trainingData.pickle'))
+validateData = pickle.load(open('processed_data/validateData.pickle'))
+trainingLabel = pickle.load(open('processed_data/trainingLabel.pickle'))
+validateLabel = pickle.load(open('processed_data/validateLabel.pickle'))
+
+action = 'train' 						# 'train' or 'predict'
 
 graph = tf.Graph()
 with graph.as_default():
@@ -67,29 +69,31 @@ batchSize = 128
 with tf.Session(graph=graph) as session:
     session.run(tf.initialize_all_variables())
     saver = tf.train.Saver()
-    step = 0
-    
-    while (True):
-        offset = (step * batchSize) % (trainy.shape[0] - batchSize)
-        # slicing the whole training set into batches # 
-        batchData = trainX[offset:(offset + batchSize), :, :, :]  
-        batchLabel = trainy[offset:(offset + batchSize), :]
-        
-        _, stepLoss, stepAcc = session.run([optimizer, loss, accuracy], 
-                                    feed_dict={tfTrainingData: batchData,
-                                               tfTrainingLabels: batchLabel,
-                                               keep_prob: 1.0})
-        step += 1
-        if (step == 1 or step % 100 == 0):
-            validLoss, validAcc = session.run([loss, accuracy], 
-                                    feed_dict={tfTrainingData: validateData,
-                                               tfTrainingLabels: validateLabel,
-                                               keep_prob: 1.0})
-            print ("Step %5d: Loss = %10.6f, Train Acc. = %10.6f, Valid Acc. = %10.6f" % (step, stepLoss, stepAcc, validAcc))
-            
-        if (step > 10000):
-            save_path = saver.save(session, "abc.ckpt")
-            break
+	
+	if (action == 'train'):
+		step = 0
+		while (True):
+			offset = (step * batchSize) % (trainy.shape[0] - batchSize)
+			# slicing the whole training set into batches # 
+			batchData = trainingData[offset:(offset + batchSize),:,:,:]  
+			batchLabel = trainingLabel[offset:(offset + batchSize),:]
+			
+			_, stepLoss, stepAcc = session.run([optimizer, loss, accuracy], \
+										feed_dict={tfTrainingData: batchData, tfTrainingLabels: batchLabel, keep_prob: 1.0})
+			step += 1
+			if (step == 1 or step % 100 == 0):
+				print ("Step %5d: Loss = %10.6f, Train Acc. = %10.6f, Valid Acc. = %10.6f" % (step, stepLoss, stepAcc, validAcc))
+				
+			if (step > 10000):
+				save_path = saver.save(session, "abc.ckpt")
+				break
+	elif (action == 'predict'):
+		saver.restore(session, "abc.ckpt")
+		predictData = validateData[0,:,:,:]
+		predictLabel = validateLabel[0,:,:,:]
+		stepLoss, stepAcc = session.run([loss, accuracy], \
+										feed_dict={tfTrainingData: batchData, tfTrainingLabels: batchLabel, keep_prob: 1.0})
+		print stepAcc
 # ==========================================================================================================================
 # End of code
 # ==========================================================================================================================
