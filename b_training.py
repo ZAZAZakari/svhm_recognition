@@ -1,4 +1,5 @@
 import pickle
+import numpy as np
 import tensorflow as tf
 
 trainingData = pickle.load(open('processed_data/trainingData.pickle'))
@@ -92,7 +93,7 @@ with tf.Session(graph=graph) as session:
 		predictData = validateData[0,:,:,:]
 		predictLabel = validateLabel[0,:,:,:]
 		stepLoss, stepAcc = session.run([loss, accuracy], \
-										feed_dict={tfTrainingData: batchData, tfTrainingLabels: batchLabel, keep_prob: 1.0})
+										feed_dict={tfTrainingData: predictData, tfTrainingLabels: predictLabel, keep_prob: 1.0})
 		print stepAcc
 # ==========================================================================================================================
 # End of code
