@@ -10,7 +10,7 @@ import tarfile
 #		   data_utl               	[String] The download link
 # [ACTION] Download the file on the given data url to the destinating folder
 #===========================================================================================================================
-def downalod(dest_directory, DATA_URL):
+def download(dest_directory, DATA_URL):
     # Check if the destination directory exists, if not, create the folder #
     if not os.path.exists(dest_directory):
         os.makedirs(dest_directory)
