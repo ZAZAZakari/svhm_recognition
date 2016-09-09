@@ -2,10 +2,15 @@ import numpy as np
 import tensorflow as tf
 import scipy.io
 import freeze_graph
+import maybe_download
 import os
 
-trainMat = scipy.io.loadmat('processed_data/characterRecognition/train.mat')
-validateMat = scipy.io.loadmat('processed_data/characterRecognition/validate.mat')
+
+maybe_download.download('processed_data', 'https://storage.googleapis.com/yobi3d-deep-learning/splited/training.mat')
+maybe_download.download('processed_data', 'https://storage.googleapis.com/yobi3d-deep-learning/splited/validate.mat')
+
+trainMat = scipy.io.loadmat('processed_data/training.mat')
+validateMat = scipy.io.loadmat('processed_data/validate.mat')
 
 trainingData = trainMat['data']
 validateData = validateMat['data']
@@ -14,11 +19,15 @@ validateLabel = validateMat['label']
 
 del trainMat
 del validateMat
+
+classifierName= 'streetNumberClassifier'
+numberOfSteps = 1e5
+
 graph = tf.Graph()
 with graph.as_default():
     # Declaring placeholders 
     tfTrainingData = tf.placeholder(tf.float32, [None, 32, 32, 3], name='tfTrainingData')
-    tfTrainingLabels = tf.placeholder(tf.float32, [None, 10], name='tfTrainingLabels')
+    tfTrainingLabels = tf.placeholder(tf.float32, [None, 11], name='tfTrainingLabels')
     keep_prob = tf.placeholder(tf.float32, name='keep_prob')
     def weight_variable(shape):
         return tf.Variable(tf.truncated_normal(shape, stddev=0.1))
@@ -61,8 +70,8 @@ with graph.as_default():
     h_fc2 = tf.nn.relu(tf.matmul(h_fc_1_drop, W_fc2) + b_fc2)
     h_fc_2_drop = tf.nn.dropout(h_fc2, keep_prob)
     
-    W_fc3 = weight_variable([1024, 10])
-    b_fc3 = bias_variable([10])  
+    W_fc3 = weight_variable([1024, 11])
+    b_fc3 = bias_variable([11])  
     logits = (tf.matmul(h_fc_2_drop, W_fc3) + b_fc3)
     with tf.name_scope('Output'):
         output = tf.nn.softmax(logits, name='softmax')
@@ -93,13 +102,13 @@ with tf.Session(graph=graph) as session:
             print ("Step %5d: Loss = %10.6f, TrainAcc = %10.6f, validLoss = %10.6f, validAcc = %10.6f" % \
                     (step, stepLoss, stepAcc, validLoss, validAcc))
             
-            if (step > 90000):
-                save_path = saver.save(session, "model/characterClassification_temp.ckpt", global_step=0)
-                tf.train.write_graph(session.graph_def, 'model', 'characterClassification_temp.pb', False)
-                freeze_graph.freeze_graph('model/characterClassification_temp.pb', '', True, \
-                                      'model/characterClassification_temp.ckpt-0', 'Output/softmax,Output/loss,Output/accuracy', \
-                                      'save/restore_all', 'save/Const:0', "model/characterClassification_prod.pb", False, "") 
-                os.system('rm model/characterClassification_temp.*')
+            if (step > numberOfSteps):
+                save_path = saver.save(session, ("model/%s_temp.ckpt" % (classifierName)), global_step=0)
+                tf.train.write_graph(session.graph_def, 'model', ('%s_temp.pb' % (classifierName)), False)
+                freeze_graph.freeze_graph(('model/%s_temp.pb' % (classifierName)), '', True, \
+                                      ('model/%s_temp.ckpt-0' % (classifierName)), 'Output/softmax,Output/loss,Output/accuracy', \
+                                      'save/restore_all', 'save/Const:0', ("model/%s_prod.pb"%(classifierName)), False, "") 
+                os.system(('rm model/%s_temp.*' % (classifierName)))
                 #save_path = saver.save(session, "bcd.ckpt")
                 break
 # ==========================================================================================================================
