@@ -14,8 +14,9 @@ def allowed_file(filename):
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'],
-                               filename)
+	print filename
+	return '<!doctype html><img src="' + filename + '"/>'
+	
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
@@ -43,4 +44,4 @@ def upload_file():
          <input type=submit value=Upload>
     </form>
     '''
-app.run(host='0.0.0.0', threaded=True)
+app.run(host='0.0.0.0', port='5002', threaded=True)
