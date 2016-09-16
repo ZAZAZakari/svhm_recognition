@@ -1,21 +1,20 @@
 import os
-from flask import Flask, request, redirect, url_for, send_from_directory
+import predictor
+from flask import Flask, request, redirect, url_for
 from werkzeug.utils import secure_filename
+from predictor import Predictor
 
-UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
-
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
+p = Predictor('streetNumberClassifier')
+app = Flask(__name__, static_url_path='', static_folder='')
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
-@app.route('/uploads/<filename>')
+@app.route('/results/<filename>')
 def uploaded_file(filename):
 	print filename
-	return '<!doctype html><img src="' + filename + '"/>'
+	return '<!doctype html><img src="/uploads/' + filename + '"/><br/><img src="/predictions/' + filename + '"/>'
 	
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
@@ -32,9 +31,9 @@ def upload_file():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return redirect(url_for('uploaded_file',
-                                    filename=filename))
+            file.save(os.path.join('uploads', filename))
+            p.predict(filename)
+            return redirect(url_for('uploaded_file', filename=filename))
     return '''
     <!doctype html>
     <title>Upload new File</title>
